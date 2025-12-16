@@ -3,19 +3,43 @@
  * 统一管理 YouTube 频道与 B站 UP主的关联关系
  */
 
-class ChannelAssociationManager {
-    constructor() {
-        this.STORAGE_KEY = 'channelMappings';
-        this.REMOTE_DB_URL =
-            'https://raw.githubusercontent.com/ahaduoduoduo/bilibili-youtube-danmaku/main/channel-associations.json';
-    }
+import type { ChannelAssociation } from '../types';
+
+/** 远程数据库格式 */
+interface RemoteChannelData {
+    youtubeChannelId: string;
+    bilibiliUID: string;
+    bilibiliName?: string;
+}
+
+interface RemoteDatabase {
+    channels: RemoteChannelData[];
+}
+
+/** 本地存储的关联数据 */
+interface StoredAssociation extends ChannelAssociation {
+    lastUpdate: number;
+    source?: 'local' | 'remote';
+}
+
+/** 关联统计信息 */
+interface AssociationStats {
+    totalAssociations: number;
+    recentAssociations: number;
+    associatedChannels: string[];
+}
+
+export class ChannelAssociationManager {
+    private readonly STORAGE_KEY = 'channelMappings';
+    private readonly REMOTE_DB_URL =
+        'https://raw.githubusercontent.com/ahaduoduoduo/bilibili-youtube-danmaku/main/channel-associations.json';
 
     /**
      * 获取频道关联信息（先本地后远程）
-     * @param {string} channelId - YouTube频道ID
-     * @returns {Promise<Object|null>} 关联信息或null
+     * @param channelId - YouTube频道ID
+     * @returns 关联信息或null
      */
-    async getChannelAssociation(channelId) {
+    async getChannelAssociation(channelId: string): Promise<StoredAssociation | null> {
         try {
             if (!channelId) return null;
 
@@ -35,7 +59,7 @@ class ChannelAssociationManager {
                     return remoteResult;
                 }
             } catch (error) {
-                console.log('远程获取失败，回退到本地模式:', error.message);
+                console.log('远程获取失败，回退到本地模式:', (error as Error).message);
             }
 
             return null;
@@ -47,31 +71,31 @@ class ChannelAssociationManager {
 
     /**
      * 判断频道是否已关联
-     * @param {string} channelId - YouTube频道ID
-     * @returns {Promise<boolean>} 是否已关联
+     * @param channelId - YouTube频道ID
+     * @returns 是否已关联
      */
-    async isChannelAssociated(channelId) {
+    async isChannelAssociated(channelId: string): Promise<boolean> {
         const association = await this.getChannelAssociation(channelId);
-        return association !== null && association.bilibiliUID;
+        return association !== null && !!association.bilibiliUID;
     }
 
     /**
      * 保存频道关联
-     * @param {string} channelId - YouTube频道ID
-     * @param {Object} associationData - 关联数据
-     * @param {string} associationData.bilibiliUID - B站用户UID
-     * @param {string} [associationData.bilibiliName] - B站用户名称
-     * @param {string} [associationData.bilibiliSpaceUrl] - B站空间链接
-     * @returns {Promise<boolean>} 保存是否成功
+     * @param channelId - YouTube频道ID
+     * @param associationData - 关联数据
+     * @returns 保存是否成功
      */
-    async saveChannelAssociation(channelId, associationData) {
+    async saveChannelAssociation(
+        channelId: string,
+        associationData: ChannelAssociation
+    ): Promise<boolean> {
         try {
             if (!channelId || !associationData.bilibiliUID) {
                 throw new Error('缺少必要的关联参数');
             }
 
             const result = await browser.storage.local.get(this.STORAGE_KEY);
-            const mappings = result[this.STORAGE_KEY] || {};
+            const mappings = (result[this.STORAGE_KEY] || {}) as Record<string, StoredAssociation>;
 
             mappings[channelId] = {
                 bilibiliUID: associationData.bilibiliUID,
@@ -90,15 +114,15 @@ class ChannelAssociationManager {
 
     /**
      * 删除频道关联
-     * @param {string} channelId - YouTube频道ID
-     * @returns {Promise<boolean>} 删除是否成功
+     * @param channelId - YouTube频道ID
+     * @returns 删除是否成功
      */
-    async removeChannelAssociation(channelId) {
+    async removeChannelAssociation(channelId: string): Promise<boolean> {
         try {
             if (!channelId) return false;
 
             const result = await browser.storage.local.get(this.STORAGE_KEY);
-            const mappings = result[this.STORAGE_KEY] || {};
+            const mappings = (result[this.STORAGE_KEY] || {}) as Record<string, StoredAssociation>;
 
             delete mappings[channelId];
 
@@ -112,12 +136,12 @@ class ChannelAssociationManager {
 
     /**
      * 获取所有关联
-     * @returns {Promise<Object>} 所有关联映射
+     * @returns 所有关联映射
      */
-    async getAllAssociations() {
+    async getAllAssociations(): Promise<Record<string, StoredAssociation>> {
         try {
             const result = await browser.storage.local.get(this.STORAGE_KEY);
-            return result[this.STORAGE_KEY] || {};
+            return (result[this.STORAGE_KEY] || {}) as Record<string, StoredAssociation>;
         } catch (error) {
             console.error('获取所有关联失败:', error);
             return {};
@@ -126,9 +150,9 @@ class ChannelAssociationManager {
 
     /**
      * 获取关联统计信息
-     * @returns {Promise<Object>} 统计信息
+     * @returns 统计信息
      */
-    async getAssociationStats() {
+    async getAssociationStats(): Promise<AssociationStats> {
         try {
             const mappings = await this.getAllAssociations();
             const channelIds = Object.keys(mappings);
@@ -158,21 +182,23 @@ class ChannelAssociationManager {
 
     /**
      * 验证关联数据格式
-     * @param {Object} associationData - 关联数据
-     * @returns {boolean} 数据是否有效
+     * @param associationData - 关联数据
+     * @returns 数据是否有效
      */
-    validateAssociationData(associationData) {
+    validateAssociationData(associationData: unknown): associationData is ChannelAssociation {
         if (!associationData || typeof associationData !== 'object') {
             return false;
         }
 
+        const data = associationData as Partial<ChannelAssociation>;
+
         // 必须有bilibiliUID
-        if (!associationData.bilibiliUID || typeof associationData.bilibiliUID !== 'string') {
+        if (!data.bilibiliUID || typeof data.bilibiliUID !== 'string') {
             return false;
         }
 
         // 验证UID格式（纯数字）
-        if (!/^\d+$/.test(associationData.bilibiliUID)) {
+        if (!/^\d+$/.test(data.bilibiliUID)) {
             return false;
         }
 
@@ -181,13 +207,13 @@ class ChannelAssociationManager {
 
     /**
      * 获取本地关联信息
-     * @param {string} channelId - YouTube频道ID
-     * @returns {Promise<Object|null>} 本地关联信息或null
+     * @param channelId - YouTube频道ID
+     * @returns 本地关联信息或null
      */
-    async getLocalAssociation(channelId) {
+    async getLocalAssociation(channelId: string): Promise<StoredAssociation | null> {
         try {
             const result = await browser.storage.local.get(this.STORAGE_KEY);
-            const mappings = result[this.STORAGE_KEY] || {};
+            const mappings = (result[this.STORAGE_KEY] || {}) as Record<string, StoredAssociation>;
             return mappings[channelId] || null;
         } catch (error) {
             console.error('获取本地关联信息失败:', error);
@@ -197,10 +223,10 @@ class ChannelAssociationManager {
 
     /**
      * 从远程获取关联信息
-     * @param {string} channelId - YouTube频道ID
-     * @returns {Promise<Object|null>} 远程关联信息或null
+     * @param channelId - YouTube频道ID
+     * @returns 远程关联信息或null
      */
-    async getRemoteAssociation(channelId) {
+    async getRemoteAssociation(channelId: string): Promise<StoredAssociation | null> {
         try {
             const remoteData = await this.fetchRemoteAssociations();
             if (!remoteData || !remoteData.channels) {
@@ -231,9 +257,9 @@ class ChannelAssociationManager {
 
     /**
      * 从远程获取完整的关联数据库
-     * @returns {Promise<Object|null>} 远程数据或null
+     * @returns 远程数据或null
      */
-    async fetchRemoteAssociations() {
+    async fetchRemoteAssociations(): Promise<RemoteDatabase | null> {
         try {
             const response = await fetch(this.REMOTE_DB_URL, {
                 method: 'GET',
@@ -265,10 +291,10 @@ class ChannelAssociationManager {
 
     /**
      * 解析B站空间链接获取UID
-     * @param {string} spaceUrl - B站空间链接
-     * @returns {string|null} UID或null
+     * @param spaceUrl - B站空间链接
+     * @returns UID或null
      */
-    parseBilibiliSpaceUrl(spaceUrl) {
+    parseBilibiliSpaceUrl(spaceUrl: string | null | undefined): string | null {
         if (!spaceUrl) return null;
         const match = spaceUrl.match(/space\.bilibili\.com\/(\d+)/);
         return match ? match[1] : null;
@@ -276,18 +302,7 @@ class ChannelAssociationManager {
 }
 
 // 创建全局实例
-const channelAssociation = new ChannelAssociationManager();
+export const channelAssociation = new ChannelAssociationManager();
 
-// 兼容性：提供简化的全局函数接口
-window.getChannelAssociation = (channelId) => channelAssociation.getChannelAssociation(channelId);
-window.getLocalAssociation = (channelId) => channelAssociation.getLocalAssociation(channelId);
-window.getRemoteAssociation = (channelId) => channelAssociation.getRemoteAssociation(channelId);
-window.isChannelAssociated = (channelId) => channelAssociation.isChannelAssociated(channelId);
-window.saveChannelAssociation = (channelId, data) =>
-    channelAssociation.saveChannelAssociation(channelId, data);
-window.removeChannelAssociation = (channelId) =>
-    channelAssociation.removeChannelAssociation(channelId);
-
-// ES模块导出
-export { ChannelAssociationManager, channelAssociation };
+// 默认导出
 export default channelAssociation;

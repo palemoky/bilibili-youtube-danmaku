@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "lib": ["ES2020", "DOM"],
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "resolveJsonModule": true,
+        "allowJs": true,
+        "checkJs": false,
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "types": ["chrome", "webextension-polyfill"],
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./*"],
+            "@/utils/*": ["./utils/*"],
+            "@/services/*": ["./services/*"],
+            "@/types/*": ["./types/*"]
+        }
+    },
+    "include": ["entrypoints/**/*", "utils/**/*", "services/**/*", "types/**/*", "*.config.ts"],
+    "exclude": ["node_modules", ".output", ".wxt", "dist"]
+}

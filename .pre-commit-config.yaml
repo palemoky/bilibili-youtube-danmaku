@@ -1,0 +1,77 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+
+repos:
+    # Prettier - Code formatting
+    - repo: https://github.com/pre-commit/mirrors-prettier
+      rev: v4.0.0-alpha.8
+      hooks:
+          - id: prettier
+            types_or: [javascript, jsx, ts, tsx, json, yaml, markdown, css, html]
+            args: [--write]
+
+    # ESLint - JavaScript/TypeScript linting
+    - repo: https://github.com/pre-commit/mirrors-eslint
+      rev: v9.15.0
+      hooks:
+          - id: eslint
+            files: \.(js|ts|tsx)$
+            types: [file]
+            args: [--fix]
+            additional_dependencies:
+                - eslint@9.39.2
+                - '@typescript-eslint/eslint-plugin@8.49.0'
+                - '@typescript-eslint/parser@8.49.0'
+
+    # Built-in hooks
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v5.0.0
+      hooks:
+          # File checks
+          - id: check-added-large-files
+            args: [--maxkb=1000]
+          - id: check-case-conflict
+          - id: check-merge-conflict
+          - id: check-symlinks
+          - id: destroyed-symlinks
+
+          # Syntax checks
+          - id: check-json
+          - id: check-yaml
+          - id: check-toml
+
+          # Code quality
+          - id: end-of-file-fixer
+          - id: trailing-whitespace
+            args: [--markdown-linebreak-ext=md]
+          - id: mixed-line-ending
+            args: [--fix=lf]
+
+          # Security
+          - id: detect-private-key
+
+    # TypeScript type checking
+    - repo: local
+      hooks:
+          - id: typescript-check
+            name: TypeScript Type Check
+            entry: bun run type-check
+            language: system
+            types: [ts, tsx]
+            pass_filenames: false
+
+          - id: vitest-run
+            name: Run Tests
+            entry: bun run test:run
+            language: system
+            types: [ts, tsx]
+            pass_filenames: false
+            stages: [push] # Only run on push, not commit
+
+# Global settings
+default_language_version:
+    node: system
+
+# Performance settings
+fail_fast: false
+minimum_pre_commit_version: '3.0.0'

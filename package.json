@@ -1,15 +1,9 @@
 {
-    "name": "B2Y - YouTube 同步显示 Bilibili 弹幕",
+    "name": "bilibili-youtube-danmaku",
     "version": "1.1.5",
-    "description": "自动将Bilibili的弹幕同步显示在YouTube视频上",
-    "main": "background/background.js",
+    "description": "自动将Bilibili的弹幕同步显示在YouTube视频上 - Sync Bilibili danmaku to YouTube videos",
+    "type": "module",
     "scripts": {
-        "format": "prettier --write .",
-        "format:check": "prettier --check .",
-        "format:js": "prettier --write \"**/*.js\"",
-        "format:css": "prettier --write \"**/*.css\"",
-        "format:html": "prettier --write \"**/*.html\"",
-        "format:json": "prettier --write \"**/*.json\"",
         "dev": "wxt",
         "dev:firefox": "wxt -b firefox",
         "dev:chrome": "wxt -b chrome",
@@ -27,10 +21,28 @@
         "zip:firefox": "wxt zip -b firefox",
         "zip:edge": "wxt zip -b edge",
         "zip:safari": "wxt zip -b safari",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "lint": "eslint . --ext .js,.ts,.tsx",
+        "lint:fix": "eslint . --ext .js,.ts,.tsx --fix",
+        "type-check": "tsc --noEmit",
+        "test": "vitest",
+        "test:ui": "vitest --ui",
+        "test:run": "vitest run",
+        "test:coverage": "vitest run --coverage",
         "postinstall": "wxt prepare"
     },
     "devDependencies": {
+        "@types/chrome": "^0.1.32",
+        "@types/webextension-polyfill": "^0.12.4",
+        "@typescript-eslint/eslint-plugin": "^8.49.0",
+        "@typescript-eslint/parser": "^8.49.0",
+        "@vitest/ui": "^4.0.15",
+        "eslint": "^9.39.2",
+        "happy-dom": "^20.0.11",
         "prettier": "^3.6.2",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.15",
         "wxt": "^0.20.7"
     },
     "keywords": [
@@ -38,8 +50,14 @@
         "youtube",
         "danmaku",
         "browser-extension",
-        "chrome-extension"
+        "chrome-extension",
+        "firefox-addon",
+        "typescript"
     ],
     "author": "",
-    "license": "MIT"
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourusername/bilibili-youtube-danmaku"
+    }
 }

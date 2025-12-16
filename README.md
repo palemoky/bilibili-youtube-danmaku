@@ -124,32 +124,60 @@
 
 ### 技术栈
 - 🎯 **WXT Framework** - 现代化浏览器扩展开发框架
-- 🚀 **ES6 模块化** - 使用 import/export 语法
-- ⚡ **热重载** - 开发时自动刷新扩展
+- 🚀 **TypeScript** - 类型安全的 JavaScript 超集
+- ⚡ **Bun** - 快速的 JavaScript 运行时和包管理器
 - 🔄 **代码分割** - 自动优化资源加载
 - 🌐 **跨浏览器** - 一套代码支持多浏览器
 
 ### 开发环境
 
-```bash
-# 安装依赖
-npm install
+#### 前置要求
+- [Bun](https://bun.sh/) >= 1.0（推荐使用最新版本）
+- Node.js >= 18（可选，用于某些工具）
 
+#### 安装依赖
+
+```bash
+# 使用 Bun 安装依赖（推荐）
+bun install
+
+# 或使用 npm（不推荐，项目已迁移到 Bun）
+npm install
+```
+
+#### 开发命令
+
+```bash
 # Chrome 开发模式（支持热重载）
-npm run dev
+bun run dev
 
 # Firefox 开发模式
-npm run dev:firefox
+bun run dev:firefox
+
+# Edge 开发模式
+bun run dev:edge
+
+# Safari 开发模式
+bun run dev:safari
+
+# 代码格式化
+bun run format
+
+# 代码检查
+bun run lint
+
+# TypeScript 类型检查
+bun run type-check
 
 # 生产构建
-npm run build
+bun run build
 
-# Firefox 构建
-npm run build:firefox
+# 构建所有浏览器版本
+bun run build:all
 
 # 打包扩展文件
-npm run zip
-npm run zip:firefox
+bun run zip
+bun run zip:all
 ```
 
 #### 开发环境配置
@@ -161,7 +189,7 @@ npm run zip:firefox
 **Chrome/Edge 浏览器：**
 - 浏览器数据将保存在 `.wxt/chrome-data/` 目录下
 - 该目录已在 `.gitignore` 中被忽略，不会被提交到版本控制
-- 首次运行 `npm run dev` 后，登录B站的状态会被保存
+- 首次运行 `bun run dev` 后，登录B站的状态会被保存
 - 后续开发时无需重复登录
 
 **Firefox 浏览器：**
@@ -171,8 +199,29 @@ npm run zip:firefox
   2. 创建新配置文件 `wxt-dev-profile` (可为任意名称，但需要在`web-ext.config.js`文件中填写对应的Profile名称)
   3. 点击 "Launch profile in new browser"
   4. 在新窗口中登录B站并保存状态
-  5. 关闭窗口，运行 `npm run dev:firefox`
+  5. 关闭窗口，运行 `bun run dev:firefox`
 - ⚠️ **重要**：直接在开发模式窗口中的登录不会被保存，必须先在正常Firefox窗口中建立登录状态
+
+### TypeScript 开发
+
+项目已全面支持 TypeScript，提供完整的类型安全：
+
+#### 类型定义位置
+- `types/index.ts` - 全局类型定义（弹幕、视频信息等）
+- `types/global.d.ts` - 全局声明（浏览器 API、第三方库）
+
+#### 主要模块
+- `utils/` - 工具函数（加密、签名、标题匹配等）
+- `services/` - 服务层（Bilibili API、弹幕处理）
+- `entrypoints/` - 扩展入口点（background、content、popup）
+
+#### 类型检查
+```bash
+# 运行 TypeScript 类型检查
+bun run type-check
+
+# 类型检查会在 Git pre-commit 时自动运行
+```
 
 ### 项目结构
 ```
@@ -181,10 +230,54 @@ bilibili-youtube-danmaku/
 │   ├── background/       # 后台脚本
 │   ├── content/         # 内容脚本
 │   └── popup/           # 弹窗界面
-├── utils/               # 工具模块  
+├── services/            # 服务层
+│   ├── bilibili-api.ts  # Bilibili API 服务
+│   └── danmaku-processor.ts # 弹幕处理服务
+├── utils/               # 工具模块
+│   ├── crypto.ts        # 加密工具
+│   ├── wbi.ts           # WBI 签名
+│   ├── title-matcher.ts # 标题匹配
+│   ├── channelAssociation.ts # 频道关联
+│   └── danmaku-engine.js # 弹幕引擎
+├── types/               # TypeScript 类型定义
+│   ├── index.ts         # 全局类型
+│   └── global.d.ts      # 全局声明
 ├── public/              # 静态资源
+├── lib/                 # 第三方库
+├── tsconfig.json        # TypeScript 配置
+├── .eslintrc.json       # ESLint 配置
 └── wxt.config.js        # WXT 配置文件
 ```
+
+### 代码质量
+
+项目配置了完整的代码质量工具链：
+
+- **ESLint** - JavaScript/TypeScript 代码检查
+- **Prettier** - 代码格式化
+- **Husky** - Git hooks 管理
+- **lint-staged** - 提交前自动检查和格式化
+
+在提交代码前，Git hooks 会自动：
+1. 运行 ESLint 修复可修复的问题
+2. 运行 Prettier 格式化代码
+3. 运行 TypeScript 类型检查
+
+### 贡献指南
+
+欢迎贡献代码！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+**代码规范：**
+- 使用 TypeScript 编写新代码
+- 遵循 ESLint 和 Prettier 配置
+- 添加适当的类型注解
+- 编写清晰的注释
 
 ## 📝 更新日志
 

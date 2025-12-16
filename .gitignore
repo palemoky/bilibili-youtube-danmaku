@@ -7,3 +7,8 @@ assets/create-icons.html
 node_modules/
 .output/
 .wxt/
+
+# TypeScript
+*.tsbuildinfo
+dist/
+build/
